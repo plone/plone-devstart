@@ -27,10 +27,6 @@ plone_versions = {
         'python': '2.6',
         'skeleton': 'https://raw.github.com/optilude/plone-devstart/closet/plone-4.1.zip',
     },
-    '4.2' : {
-        'python': '2.6',
-        'skeleton': 'https://raw.github.com/optilude/plone-devstart/closet/plone-4.2.zip',
-    },
 }
 default_version = '4.1'
 
@@ -72,7 +68,7 @@ def check_python_version(plone_version):
 # Execution
 
 def main():
-    
+
     args = sys.argv
     directory =  os.getcwd()
     if len(args) > 1:
@@ -108,7 +104,7 @@ def main():
     kgs_url = config['plone_kgs_url'] % version
     if not check_url(kgs_url):
         print "Warning: No known good set found at", kgs_url
-        print "Plone build will likely fail".
+        print "Plone build will likely fail."
         print
         input("Press Enter to continue, or Ctrl+C to abort")
 
@@ -119,7 +115,7 @@ def main():
         if python_version is not None:
             print "The expected Python version is ", python_version        
 
-        print "Plone build may fail".
+        print "Plone build may fail."
         print
         input("Press Enter to continue, or Ctrl+C to abort")
 

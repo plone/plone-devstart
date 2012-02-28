@@ -14,168 +14,31 @@ This will:
   environment
 * Create and bootstrap a new buildout for Plone using this interpreter
 
-You will be asked several questions along the way:
-
-* Plone version to use. This should be within the range of versions known to
-  this version of ``plone-devstart``, otherwise you will be given an warning.
-* A choice of whether to create a skeleton package for your custom code.
-  If you choose this option, some additional questions will be asked:
-
-  * Package name (which will be normalised)
-  * Whether or not to create a skeleton Diazo theme
-  * Whether or not to enable content types
+You will be asked several questions along the way
 """
 
+import os
+import os.path
 import sys
 
-# Base Python version for each base Plone version (to minor version)
-python_versions = {
-    '4.0': '2.6',
-    '4.1': '2.6',
-    '4.2': '2.6',
+# Base Python version and skeleton location for each base Plone version (to minor version)
+plone_versions = {
+    '4.1' : {
+        'python': '2.6',
+        'skeleton': 'https://raw.github.com/optilude/plone-devstart/closet/plone-4.1.zip',
+    },
+    '4.2' : {
+        'python': '2.6',
+        'skeleton': 'https://raw.github.com/optilude/plone-devstart/closet/plone-4.2.zip',
+    },
 }
+default_version = '4.1'
 
-config = dict(
-    virtualenv_url = "https://raw.github.com/pypa/virtualenv/master/virtualenv.py",
-    bootstrap_url = "http://python-distribute.org/bootstrap.py",
-    plone_kgs_url = "http://dist.plone.org/release/%(plone_version)s/versions.cfg",
-)
-
-templates = dict(
-
-    buildout_cfg = """\
-[buildout]
-parts =
-    instance
-    test
-    coverage-report
-    zopepy
-    zopeskel
-    checkversions
-    mkrelease
-#    omelette
-
-extends =
-    packages.cfg
-
-# Packages to check out/update when buildout is run
-auto-checkout =
-    %(package_name)s
-
-# Make sure buildout always attempts to update packages
-always-checkout = force
-
-# Development Zope instance. Installs the ``bin/instance`` script
-[instance]
-recipe = plone.recipe.zope2instance
-http-address = 8080
-user = admin:admin
-verbose-security = on
-eggs =
-    ${eggs:main}
-    ${eggs:devtools}
-
-# Test runner. Run: ``bin/test`` to execute all tests
-[test]
-recipe = zc.recipe.testrunner
-eggs = ${eggs:test}
-defaults = ['--auto-color', '--auto-progress']
-
-# Coverage report generator.
-# Run: ``bin/test --coverage=coverage``
-# and then: ``bin/coveragereport``
-[coverage-report]
-recipe = zc.recipe.egg
-eggs = z3c.coverage
-scripts = coveragereport
-arguments = ('parts/test/coverage', 'coverage')
-
-# Installs the ``bin/zopepy`` interpreter.
-[zopepy]
-recipe = zc.recipe.egg
-eggs =
-    ${eggs:main}
-    ${eggs:devtools}
-interpreter = zopepy
-
-# Installs ZopeSkel, which can be used to create new packages
-# Run: ``bin/zopeskel``
-[zopeskel]
-recipe = zc.recipe.egg
-eggs = ZopeSkel
-
-# Tool to help check for new versions.
-# Run: ``bin/checkversions versions.cfg``
-[checkversions]
-recipe = zc.recipe.egg
-eggs = z3c.checkversions [buildout]
-
-# Tool to make releases
-# Run: ``bin/mkrelease --help``
-[mkrelease]
-recipe = zc.recipe.egg
-eggs = jarn.mkrelease
-
-# Installs links to all installed packages to ``parts/omelette``.
-# On Windows, you need to install junction.exe first
-[omelette]
-recipe = collective.recipe.omelette
-eggs =
-    ${eggs:main}
-    ${eggs:devtools}
-""",
-
-    packages_cfg = """\
-[buildout]
-extensions = mr.developer buildout.dumppickedversions
-extends =
-# Known good sets of eggs we may be using
-    %(plone_kgs_url)s
-    versions.cfg
-
-versions = versions
-unzip = true
-
-# Egg sets
-[eggs]
-main =
-    Plone
-test =
-devtools =
-    plone.reload
-    Products.PDBDebugMode
-    Products.PrintingMailHost
-    Products.DocFinderTab
-
-# Checkout locations
-[sources]
-%(package_checkout)s
-""",
-
-    versions_cfg = """\
-[versions]
-# Buildout
-mr.developer = 1.20
-collective.recipe.omelette = 0.12
-
-# Development tools
-Products.DocFinderTab = 1.0.4
-Products.PDBDebugMode = 1.3.1
-Products.PrintingMailHost = 0.7
-z3c.coverage = 1.2.0
-jarn.mkrelease = 3.5
-setuptools-git = 0.4.2
-setuptools-hg = 0.4
-
-# ZopeSkel
-ZopeSkel = 3.0a1
-Cheetah = 2.4.4
-Paste = 1.7.5.1
-PasteScript = 1.7.5
-PasteDeploy = 1.5.0
-""",
-
-)
+config = {
+    'virtualenv_url': "https://raw.github.com/pypa/virtualenv/master/virtualenv.py",
+    'bootstrap_url' : "http://python-distribute.org/bootstrap.py",
+    'plone_kgs_url' : "http://dist.plone.org/release/%(plone_version)s/versions.cfg",
+}
 
 # Utilities
 
@@ -195,6 +58,10 @@ def check_url(url):
     """Check to see if the given URL exists
     """
 
+def get_base_version(version):
+    """Turn a specific Plone or Python version into a base version
+    """
+
 # Verification
 
 def check_python_version(plone_version):
@@ -205,7 +72,60 @@ def check_python_version(plone_version):
 # Execution
 
 def main():
-    """
+    
+    args = sys.argv
+    directory =  os.getcwd()
+    if len(args) > 1:
+        directory = args[1]
+
+    print
+    print "Welcome to plone-devstart."
+    print "Press Ctrl+C any time to abort"
+    print
+
+    print "Please enter the Plone version you would like to start with."
+    print "Version numbers can be found at http://dist.plone.org/release"
+    print
+    print "plone-devstart knows about the following base versions:"
+    print
+    print "  ", ", ".join(sorted(plone_versions.keys()))
+    print
+    print "You can use a more specific revision of any of these, e.g. 4.1.2"
+    print
+
+    version = raw_input("Enter a Plone version number [%s] " % default_version)
+    base_version = get_base_version(version)
+
+    while base_version not in plone_versions:
+        print "plone-devstart does not know what to do with this version."
+        print "Known versions start with one of: ", ", ".join(sorted(plone_versions.keys()))
+        print "Please try again or press Ctrl+C to abort."
+        print
+
+        version = raw_input("Enter a Plone version number [%s] " % default_version)
+        base_version = get_base_version(version)
+
+    kgs_url = config['plone_kgs_url'] % version
+    if not check_url(kgs_url):
+        print "Warning: No known good set found at", kgs_url
+        print "Plone build will likely fail".
+        print
+        input("Press Enter to continue, or Ctrl+C to abort")
+
+    if not check_python_version(version):
+        print "Warning: The current Python version is not known to work with Plone ", version
+
+        python_version = plone_versions.get(base_version, {}).get('python_version', None)
+        if python_version is not None:
+            print "The expected Python version is ", python_version        
+
+        print "Plone build may fail".
+        print
+        input("Press Enter to continue, or Ctrl+C to abort")
+
+
+def create_directory(directory):
+    """Ensure the given directory exists
     """
 
 def create_virtualenv(directory):

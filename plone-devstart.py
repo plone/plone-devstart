@@ -24,6 +24,7 @@ import httplib
 import urlparse
 import urllib2
 import subprocess
+import zipfile
 
 # Version of this script
 devstart_version = "0.1"
@@ -32,7 +33,7 @@ devstart_version = "0.1"
 plone_versions = {
     '4.1' : {
         'python_version': '2.6',
-        'skeleton_url': 'https://raw.github.com/optilude/plone-devstart/closet/plone-4.1.zip',
+        'skeleton_url': 'https://github.com/optilude/plone-devstart/raw/master/closet/plone-4.1.zip',
     },
 }
 default_version = '4.1'
@@ -218,8 +219,6 @@ def create_buildout(directory, plone_version, version_config):
     """Create a new buildout in the given directory
     """
 
-    cwd = os.getcwd()
-
     if os.path.exists(os.path.join(directory, 'buildout.cfg')):
         print
         print "** Warning: It looks like there is already a buildout.cfg file here."
@@ -229,11 +228,12 @@ def create_buildout(directory, plone_version, version_config):
     # Download
     download(version_config['skeleton_url'], directory, 'buildout-skeleton.zip')
 
-    # Unzip and update file contents
-    
+    # Unzip
+    zf = zipfile.ZipFile(os.path.join(directory, 'buildout-skeleton.zip'))
+    zf.extractall(directory)
 
-    os.chdir(directory)
-    os.chdir(cwd)
+    # Update file contents
+
 
 def bootstrap(directory):
     """Bootstrap the buildout in the given directory

@@ -106,10 +106,13 @@ def get_base_version(version):
 
 # Verification
 
-def check_python_version(version_config):
+def check_environment(version_config):
     """Given an intended Plone version, determine if the current Python version
     is acceptable
     """
+
+    # TODO: Check for gcc if not on Windows
+
     python_version = version_config['python_version'].split('.')
     for i, e in enumerate(python_version):
         if i >= len(sys.version_info) or str(sys.version_info[i]) != e:
@@ -119,6 +122,8 @@ def check_python_version(version_config):
 # Execution
 
 def main():
+
+    # TODO: Command line argument for version
 
     args = sys.argv
     directory =  os.getcwd()
@@ -169,7 +174,7 @@ def main():
     else:
         print "Done"
 
-    if not check_python_version(version_config):
+    if not check_environment(version_config):
         print
         print "** Warning: The current Python version is not known to work with Plone", version
         print "The expected Python version is", version_config['python_version'], "but this script is being run with Python"
@@ -229,10 +234,19 @@ def create_buildout(directory, plone_version, version_config):
     download(version_config['skeleton_url'], directory, 'buildout-skeleton.zip')
 
     # Unzip
-    zf = zipfile.ZipFile(os.path.join(directory, 'buildout-skeleton.zip'))
-    zf.extractall(directory)
+    skeleton_file = os.path.join(directory, 'buildout-skeleton.zip')
+    zf = zipfile.ZipFile(skeleton_file)
 
-    # Update file contents
+    for name in zf.namelist():
+        f = zf.open(name)
+        with open(os.path.join(directory, name), 'w') as f2:
+            f2.write(f.read() % {
+                'plone_kgs_url': config['plone_kgs_url'] % {'plone_version': plone_version},
+            })
+        f.close()
+
+    # Delete the zip file
+    os.unlink(skeleton_file)
 
 
 def bootstrap(directory):

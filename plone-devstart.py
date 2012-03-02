@@ -1,3 +1,4 @@
+#!/usr/bin/python
 """Create a "safe" Plone development environment starting from nothing but
 Python.
 
@@ -17,6 +18,7 @@ This will:
 You will be asked several questions along the way
 """
 
+import optparse
 import os
 import os.path
 import sys
@@ -42,6 +44,18 @@ config = {
     'virtualenv_url': "https://raw.github.com/pypa/virtualenv/master/virtualenv.py",
     'bootstrap_url' : "http://python-distribute.org/bootstrap.py",
     'plone_kgs_url' : "http://dist.plone.org/release/%(plone_version)s/versions.cfg",
+    'pycheck': 
+"""
+#include <Python.h>
+int main(void) {}
+""",
+    'pilcheck': 
+"""
+#include <stdio.h>
+#include <jpeglib.h>
+#include <png.h>
+int main(void) {}
+""",
 }
 
 # Utilities
@@ -112,6 +126,8 @@ def check_environment(version_config):
     """
 
     # TODO: Check for gcc if not on Windows
+    # TODO: Check for python headers
+    # TODO: Check for PIL-required libraries
 
     python_version = version_config['python_version'].split('.')
     for i, e in enumerate(python_version):
@@ -123,12 +139,19 @@ def check_environment(version_config):
 
 def main():
 
-    # TODO: Command line argument for version
+    parser = optparse.OptionParser()
+    parser.add_option("-v", "--version", dest="version",
+        help="Use the given Plone version", metavar="VERSION"
+    )
+    parser.add_option("-f", "--force", action="store_true", dest="force", default=False,
+        help="Force creation of files even if they appear to exist already"
+    )
 
-    args = sys.argv
+    options, args = parser.parse_args()
+
     directory =  os.getcwd()
-    if len(args) > 1:
-        directory = args[1]
+    if len(args) > 0:
+        directory = args[0]
     directory = os.path.abspath(directory)
 
     print
@@ -136,19 +159,22 @@ def main():
     print "Press Ctrl+C any time to abort"
     print
 
-    print "Please enter the Plone version you would like to start with."
-    print "Version numbers can be found at http://dist.plone.org/release"
-    print
-    print "plone-devstart knows about the following base versions:"
-    print
-    print "  ", ", ".join(sorted(plone_versions.keys()))
-    print
-    print "You can use a more specific revision of any of these, e.g. 4.1.2"
-    print
+    version = options.version
 
-    version = ask("Enter a Plone version number", default_version)
+    if not version:
+        print "Please enter the Plone version you would like to start with."
+        print "Version numbers can be found at http://dist.plone.org/release"
+        print
+        print "plone-devstart knows about the following base versions:"
+        print
+        print "  ", ", ".join(sorted(plone_versions.keys()))
+        print
+        print "You can use a more specific revision of any of these, e.g. 4.1.2"
+        print
+
+        version = ask("Enter a Plone version number", default_version)
+    
     base_version = get_base_version(version)
-
     while base_version not in plone_versions:
         print
         print "plone-devstart does not know what to do with this version."
@@ -194,9 +220,14 @@ def main():
     create_virtualenv(directory)
 
     print
+    print "Installing PIL"
+    print
+    install_pil(directory)
+
+    print
     print "Obtaining skeleton buildout"
     print
-    create_buildout(directory, version, version_config)
+    create_buildout(directory, version, version_config, options)
 
     print
     print "Bootstrapping buildout"
@@ -212,19 +243,19 @@ def create_directory(directory):
 def create_virtualenv(directory):
     """Create a virtualenv in the given directory
     """
-    cwd = os.getcwd()
-
     download(config['virtualenv_url'], directory, 'virtualenv.py')
+    run(sys.executable, os.path.join(directory, 'virtualenv.py'), '--no-site-packages', directory)
 
-    os.chdir(directory)
-    run(sys.executable, 'virtualenv.py', '--no-site-packages', directory)
-    os.chdir(cwd)
+def install_pil(directory):
+    """Install PIL in the virtualenv
+    """
+    run(os.path.join(directory, 'bin', 'pip'), 'install', 'PIL')
 
-def create_buildout(directory, plone_version, version_config):
+def create_buildout(directory, plone_version, version_config, options):
     """Create a new buildout in the given directory
     """
 
-    if os.path.exists(os.path.join(directory, 'buildout.cfg')):
+    if not options.force and os.path.exists(os.path.join(directory, 'buildout.cfg')):
         print
         print "** Warning: It looks like there is already a buildout.cfg file here."
         print "plone-devstart will not override it or recreate any other files"
@@ -239,7 +270,14 @@ def create_buildout(directory, plone_version, version_config):
 
     for name in zf.namelist():
         f = zf.open(name)
-        with open(os.path.join(directory, name), 'w') as f2:
+
+        target_name = os.path.join(directory, name)
+        target_directory = os.path.dirname(target_name)
+
+        if not os.path.exists(target_directory):
+            os.makedirs(target_directory)
+
+        with open(target_name, 'w') as f2:
             f2.write(f.read() % {
                 'plone_kgs_url': config['plone_kgs_url'] % {'plone_version': plone_version},
             })

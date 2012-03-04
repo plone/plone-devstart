@@ -27,7 +27,7 @@ import urlparse
 import urllib2
 import subprocess
 import zipfile
-
+import distutils.ccompiler
 # Version of this script
 devstart_version = "0.1"
 
@@ -44,19 +44,16 @@ config = {
     'virtualenv_url': "https://raw.github.com/pypa/virtualenv/master/virtualenv.py",
     'bootstrap_url' : "http://python-distribute.org/bootstrap.py",
     'plone_kgs_url' : "http://dist.plone.org/release/%(plone_version)s/versions.cfg",
-    'pycheck': 
-"""
-#include <Python.h>
-int main(void) {}
-""",
-    'pilcheck': 
+    'pilcheck':
 """
 #include <stdio.h>
 #include <jpeglib.h>
-#include <png.h>
+#include <zlib.h>
 int main(void) {}
 """,
 }
+
+is_windows = sys.platform[:3] == 'win'
 
 # Utilities
 
@@ -91,7 +88,10 @@ def run(command, *args):
     """Run the given command
     """
     print "> Running:", command, ' '.join(args)
-    return subprocess.call([command] + list(args)) == 0
+    try:
+        return subprocess.call([command] + list(args)) == 0
+    except OSError:
+        return False
 
 def ask(prompt, default=None):
     """Ask a question and return the response entered by the user
@@ -120,20 +120,29 @@ def get_base_version(version):
 
 # Verification
 
-def check_environment(version_config):
+def check_python(version_config):
     """Given an intended Plone version, determine if the current Python version
     is acceptable
     """
-
-    # TODO: Check for gcc if not on Windows
-    # TODO: Check for python headers
-    # TODO: Check for PIL-required libraries
 
     python_version = version_config['python_version'].split('.')
     for i, e in enumerate(python_version):
         if i >= len(sys.version_info) or str(sys.version_info[i]) != e:
             return False
     return True
+
+def check_python_headers(version_config):
+    # TODO: Use distutils include prefix?
+    python_header = os.path.join(sys.prefix, 'include', 'python' + version_config['python_version'], 'Python.h')
+    return os.path.isfile(python_header)
+
+def check_compiler():
+    compilers = distutils.ccompiler.new_compiler().compiler
+    if not compilers:
+        return False
+
+    # TODO: Pipe to null
+    return run(compilers[0], '--version')
 
 # Execution
 
@@ -173,7 +182,7 @@ def main():
         print
 
         version = ask("Enter a Plone version number", default_version)
-    
+
     base_version = get_base_version(version)
     while base_version not in plone_versions:
         print
@@ -200,7 +209,7 @@ def main():
     else:
         print "Done"
 
-    if not check_environment(version_config):
+    if not check_python(version_config):
         print
         print "** Warning: The current Python version is not known to work with Plone", version
         print "The expected Python version is", version_config['python_version'], "but this script is being run with Python"
@@ -208,6 +217,26 @@ def main():
         print "Plone build may fail."
         print
         ask("Press Enter to continue, or Ctrl+C to abort")
+
+    if not is_windows:
+
+        if not check_compiler():
+            print
+            print "** Warning: Unable to find a C compiler (``cc``). Building Python packages with"
+            print "C extensions is likely to fail. You may need to install an operating system"
+            print "package like ``gcc``."
+            print
+            ask("Press Enter to continue, or Ctrl+C to abort")
+
+        if not check_python_headers(version_config):
+            print
+            print "** Warning: Unable to find Python header files. Building Python packages with"
+            print "C extensions is likely to fail. You may need to install an operating system"
+            print "package like ``python-dev`` or ``python-devel``, or compile Python from source."
+            print
+            ask("Press Enter to continue, or Ctrl+C to abort")
+
+        # TODO: Check for PIL data
 
     print
     print "Creating build in directory", directory

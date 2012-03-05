@@ -28,6 +28,8 @@ import urllib2
 import subprocess
 import zipfile
 import distutils.ccompiler
+import distutils.sysconfig
+
 # Version of this script
 devstart_version = "0.1"
 
@@ -132,11 +134,15 @@ def check_python(version_config):
     return True
 
 def check_python_headers(version_config):
-    # TODO: Use distutils include prefix?
-    python_header = os.path.join(sys.prefix, 'include', 'python' + version_config['python_version'], 'Python.h')
+    """Validate if Python header files are installed
+    """
+    directory = distutils.sysconfig.get_python_inc()
+    python_header = os.path.join(directory, 'Python.h')
     return os.path.isfile(python_header)
 
 def check_compiler():
+    """Check if there is a usable compiler installed
+    """
     compilers = distutils.ccompiler.new_compiler().compiler
     if not compilers:
         return False
@@ -144,7 +150,23 @@ def check_compiler():
     # TODO: Pipe to null
     return run(compilers[0], '--version')
 
-# TODO: Check import zlib, import _ssl and import readline
+def check_zlib():
+    """Check if zlib is installed
+    """
+    try:
+        import zlib
+        return True
+    except ImportError:
+        return False
+
+def check_ssl():
+    """Check if Pyton has SSL support
+    """
+    try:
+        import _ssl
+        return True
+    except ImportError:
+        return False
 
 # Execution
 
@@ -238,7 +260,23 @@ def main():
             print
             ask("Press Enter to continue, or Ctrl+C to abort")
 
-        # TODO: Check for PIL data
+        # TODO: Check for PIL libraries
+
+    if not check_zlib():
+        print
+        print "** Warning: Python does not have zlib support. Some Plone funtions may not work."
+        print "You may need to install an operating system package like ``zlib-dev`` or"
+        print "``zlib-devel`` and then reinstall or recompile Python."
+        print
+        ask("Press Enter to continue, or Ctrl+C to abort")
+
+    if not check_ssl():
+        print
+        print "** Warning: Python does not have SSL support. Downloading of some packages may"
+        print "fail. You may need to install an operating system package like ``openssl-dev``"
+        print "or ``openssl-devel`` and then reinstall or recompile Python."
+        print
+        ask("Press Enter to continue, or Ctrl+C to abort")
 
     print
     print "Creating build in directory", directory
@@ -253,6 +291,7 @@ def main():
     print
     print "Installing PIL"
     print
+    # TODO: We probably don't want this anymore
     install_pil(directory)
 
     print

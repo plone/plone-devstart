@@ -144,6 +144,8 @@ def check_compiler():
     # TODO: Pipe to null
     return run(compilers[0], '--version')
 
+# TODO: Check import zlib, import _ssl and import readline
+
 # Execution
 
 def main():

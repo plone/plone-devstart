@@ -27,6 +27,7 @@ import urlparse
 import urllib2
 import subprocess
 import zipfile
+import tempfile
 import distutils.ccompiler
 import distutils.sysconfig
 
@@ -83,15 +84,14 @@ def download(url, directory, filename):
         status = status + chr(8)*(len(status)+1)
         print status,
     print
-    print "Done"
     f.close()
 
-def run(command, *args):
+def run(command, *args, **kw):
     """Run the given command
     """
     print "> Running:", command, ' '.join(args)
     try:
-        return subprocess.call([command] + list(args)) == 0
+        return subprocess.call([command] + list(args), stdout=kw.get('stdout'), stderr=kw.get('stderr')) == 0
     except OSError:
         return False
 
@@ -147,7 +147,6 @@ def check_compiler():
     if not compilers:
         return False
 
-    # TODO: Pipe to null
     return run(compilers[0], '--version')
 
 def check_zlib():
@@ -167,6 +166,22 @@ def check_ssl():
         return True
     except ImportError:
         return False
+
+def check_pil_libraries():
+    """Check if the appropriate header files exist for PIL
+    """
+    c_fd, c_name = tempfile.mkstemp(suffix='.c')
+    a_fd, a_name = tempfile.mkstemp(suffix='.out')
+
+    try:
+        c_file = os.fdopen(c_fd, 'w')
+        c_file.write(config['pilcheck'])
+        c_file.close()
+
+        return run('cc', '-o', a_name, c_name)
+    finally:
+        os.unlink(c_name)
+        os.unlink(a_name)
 
 # Execution
 
@@ -222,10 +237,11 @@ def main():
 
     kgs_url = config['plone_kgs_url'] % {'plone_version': version}
     print
-    print "Checking for known good versions set at", kgs_url, "..."
+    print "* Checking for known good versions set at"
+    print "  ", kgs_url, "..."
     if not check_url(kgs_url):
         print
-        print "** Warning: No known good set found at"
+        print "** WARNING: No known good set found at"
         print kgs_url
         print "Plone build will likely fail."
         print
@@ -233,76 +249,118 @@ def main():
     else:
         print "Done"
 
+    print
+    print "* Checking Python version compatibility"
     if not check_python(version_config):
         print
-        print "** Warning: The current Python version is not known to work with Plone", version
+        print "** WARNING: The current Python version is not known to work with Plone", version
         print "The expected Python version is", version_config['python_version'], "but this script is being run with Python"
-        print "version", '.'.join([str(s) for s in sys.version_info])
-        print "Plone build may fail."
+        print "version", '.'.join([str(s) for s in sys.version_info]) + '.', "Plone build may fail."
         print
         ask("Press Enter to continue, or Ctrl+C to abort")
 
     if not is_windows:
 
+        print
+        print "* Checking for a viable C compiler"
         if not check_compiler():
             print
-            print "** Warning: Unable to find a C compiler (``cc``). Building Python packages with"
+            print "** WARNING: Unable to find a C compiler (``cc``). Building Python packages with"
             print "C extensions is likely to fail. You may need to install an operating system"
             print "package like ``gcc``."
             print
             ask("Press Enter to continue, or Ctrl+C to abort")
+        else:
+            print "Done"
 
+        print
+        print "* Checking for Python header files"
         if not check_python_headers(version_config):
             print
-            print "** Warning: Unable to find Python header files. Building Python packages with"
+            print "** WARNING: Unable to find Python header files. Building Python packages with"
             print "C extensions is likely to fail. You may need to install an operating system"
             print "package like ``python-dev`` or ``python-devel``, or compile Python from source."
             print
             ask("Press Enter to continue, or Ctrl+C to abort")
+        else:
+            print "Done"
 
-        # TODO: Check for PIL libraries
+        print
+        print "* Checking if image libraries are installed"
+        if not check_pil_libraries():
+            print
+            print "** WARNING: Unable to find ``libjpeg`` and ``zlib`` header files. Building"
+            print "PIL mail fail. You may need to install an operating system package like"
+            print "``jpeglib-dev`` or ``jpeglib-devel``."
+            print
+            ask("Press Enter to continue, or Ctrl+C to abort")
+        else:
+            print "Done"
 
+    print
+    print "* Checking for zlib support"
     if not check_zlib():
         print
-        print "** Warning: Python does not have zlib support. Some Plone funtions may not work."
+        print "** WARNING: Python does not have zlib support. Some Plone funtions may not work."
         print "You may need to install an operating system package like ``zlib-dev`` or"
         print "``zlib-devel`` and then reinstall or recompile Python."
         print
         ask("Press Enter to continue, or Ctrl+C to abort")
+    else:
+        print "Done"
 
+    print
+    print "* Checking for SSL support"
     if not check_ssl():
         print
-        print "** Warning: Python does not have SSL support. Downloading of some packages may"
+        print "** WARNING: Python does not have SSL support. Downloading of some packages may"
         print "fail. You may need to install an operating system package like ``openssl-dev``"
         print "or ``openssl-devel`` and then reinstall or recompile Python."
         print
         ask("Press Enter to continue, or Ctrl+C to abort")
+    else:
+        print "Done"
 
     print
-    print "Creating build in directory", directory
-    print
+    print "* Creating build in directory", directory
+    if not options.force:
+        print
+        ask("Press Enter to continue, or Ctrl+C to abort")
     create_directory(directory)
+    print "Done"
 
     print
-    print "Creating virtual Python environment"
-    print
+    print "* Creating virtual Python environment"
     create_virtualenv(directory)
+    print "Done"
 
     print
-    print "Installing PIL"
-    print
-    # TODO: We probably don't want this anymore
+    print "* Installing PIL"
     install_pil(directory)
+    print "Done"
 
     print
-    print "Obtaining skeleton buildout"
-    print
-    create_buildout(directory, version, version_config, options)
+    print "* Obtaining skeleton buildout"
+    if not options.force and os.path.exists(os.path.join(directory, 'buildout.cfg')):
+        print
+        print "** WARNING: It looks like there is already a buildout.cfg file here."
+        print "plone-devstart will not overwrite it or recreate any other files. Use the"
+        print "--force command line option if you want to overwrite files."
+    else:
+        create_buildout(directory, version, version_config, options)
+        print "Done"
 
     print
-    print "Bootstrapping buildout"
-    print
+    print "* Bootstrapping buildout"
     bootstrap(directory)
+    print "Done"
+
+    print
+    print "All done!"
+    print
+    print "To build Plone, inspect and modify the generated ``buildout.cfg`` as necessary,"
+    print "then run ``bin/buildout`` in the directory", directory
+
 
 def create_directory(directory):
     """Create the build directory if necessary
@@ -314,7 +372,7 @@ def create_virtualenv(directory):
     """Create a virtualenv in the given directory
     """
     download(config['virtualenv_url'], directory, 'virtualenv.py')
-    run(sys.executable, os.path.join(directory, 'virtualenv.py'), '--no-site-packages', directory)
+    run(sys.executable, os.path.join(directory, 'virtualenv.py'), directory)
 
 def install_pil(directory):
     """Install PIL in the virtualenv
@@ -324,12 +382,6 @@ def install_pil(directory):
 def create_buildout(directory, plone_version, version_config, options):
     """Create a new buildout in the given directory
     """
-
-    if not options.force and os.path.exists(os.path.join(directory, 'buildout.cfg')):
-        print
-        print "** Warning: It looks like there is already a buildout.cfg file here."
-        print "plone-devstart will not override it or recreate any other files"
-        return
 
     # Download
     download(version_config['skeleton_url'], directory, 'buildout-skeleton.zip')
@@ -348,9 +400,15 @@ def create_buildout(directory, plone_version, version_config, options):
             os.makedirs(target_directory)
 
         with open(target_name, 'w') as f2:
-            f2.write(f.read() % {
-                'plone_kgs_url': config['plone_kgs_url'] % {'plone_version': plone_version},
-            })
+            data = f.read()
+
+            # Interpolate variables into buildout cfg files only
+            if target_name.lower().endswith('.cfg'):
+                data = data % {
+                    'plone_kgs_url': config['plone_kgs_url'] % {'plone_version': plone_version},
+                }
+
+            f2.write(data)
         f.close()
 
     # Delete the zip file

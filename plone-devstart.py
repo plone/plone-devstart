@@ -391,6 +391,9 @@ def create_buildout(directory, plone_version, version_config, options):
     zf = zipfile.ZipFile(skeleton_file)
 
     for name in zf.namelist():
+        if name.endswith('/'):
+            continue
+
         f = zf.open(name)
 
         target_name = os.path.join(directory, name)

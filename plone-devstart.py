@@ -391,9 +391,6 @@ def create_buildout(directory, plone_version, version_config, options):
     zf = zipfile.ZipFile(skeleton_file)
 
     for name in zf.namelist():
-        if name.endswith('/'):
-            continue
-
         f = zf.open(name)
 
         target_name = os.path.join(directory, name)
@@ -402,16 +399,17 @@ def create_buildout(directory, plone_version, version_config, options):
         if not os.path.exists(target_directory):
             os.makedirs(target_directory)
 
-        with open(target_name, 'w') as f2:
-            data = f.read()
+        if not name.endswith('/'):
+            with open(target_name, 'w') as f2:
+                data = f.read()
 
-            # Interpolate variables into buildout cfg files only
-            if target_name.lower().endswith('.cfg'):
-                data = data % {
-                    'plone_kgs_url': config['plone_kgs_url'] % {'plone_version': plone_version},
-                }
+                # Interpolate variables into buildout cfg files only
+                if target_name.lower().endswith('.cfg'):
+                    data = data % {
+                        'plone_kgs_url': config['plone_kgs_url'] % {'plone_version': plone_version},
+                    }
 
-            f2.write(data)
+                f2.write(data)
         f.close()
 
     # Delete the zip file

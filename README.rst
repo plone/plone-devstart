@@ -110,7 +110,7 @@ customisations.
 
 The key point here is that ``plone-devstart`` assumes you have an appropriate
 Python version installed already. It will check version compatibility, but
-othewrise it allows you to use a system-installed or custom compiled Python.
+otherwise it allows you to use a system-installed or custom compiled Python.
 
 * Why not use ``ZopeSkel`` or ``Paste Script`` to build this?
 

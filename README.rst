@@ -36,7 +36,7 @@ When ``plone-devstart`` is run, it will:
 * If on a non-Windows platform: check for a C compiler (``cc``), Python
   header files, and ``libjpeg`` header files (necessary for the Python
   Imaging Library).
-* Check for ``lib`` and SSL support in Python.
+* Check for ``zlib`` and SSL support in Python.
 * Create the target directory, if it does not exist.
 * Download ``virtualenv.py`` and create an isolated virtual Python environment
   in this directory. This has the effect of creating a Python interpreter that

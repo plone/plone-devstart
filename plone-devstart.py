@@ -38,7 +38,7 @@ devstart_version = "0.1"
 plone_versions = {
     '4.1' : {
         'python_version': '2.6',
-        'skeleton_url': 'https://github.com/optilude/plone-devstart/raw/master/closet/plone-4.1.zip',
+        'skeleton_url': 'https://github.com/plone/plone-devstart/raw/master/closet/plone-4.1.zip',
     },
 }
 default_version = '4.1'

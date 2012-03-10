@@ -4,7 +4,11 @@ plone-devstart
 ``plone-devstart.py`` is a script to quickly and safely bootstrap a useful Plone
 development environment.
 
-All you need is the single script, ``plone-devstart.py``. You run it with::
+All you need is the single script, ``plone-devstart.py``::
+
+    $ curl -O https://github.com/optilude/plone-devstart/raw/master/plone-devstart.py
+
+You run it with::
 
     $ python plone-devstart.py <directory>
 

@@ -6,7 +6,7 @@ development environment.
 
 All you need is the single script, ``plone-devstart.py``::
 
-    $ curl -O https://github.com/optilude/plone-devstart/raw/master/plone-devstart.py
+    $ curl -O https://raw.github.com/plone/plone-devstart/master/plone-devstart.py
 
 You run it with::
 

@@ -32,7 +32,7 @@ import distutils.ccompiler
 import distutils.sysconfig
 
 # Version of this script
-devstart_version = "0.1"
+devstart_version = "0.2"
 
 # Base Python version and skeleton location for each base Plone version (to minor version)
 plone_versions = {
@@ -391,8 +391,6 @@ def create_buildout(directory, plone_version, version_config, options):
     zf = zipfile.ZipFile(skeleton_file)
 
     for name in zf.namelist():
-        f = zf.open(name)
-
         target_name = os.path.join(directory, name)
         target_directory = os.path.dirname(target_name)
 
@@ -400,8 +398,9 @@ def create_buildout(directory, plone_version, version_config, options):
             os.makedirs(target_directory)
 
         if not name.endswith('/'):
-            with open(target_name, 'w') as f2:
-                data = f.read()
+            f = open(target_name, 'w')
+            try:
+                data = zf.read(name)
 
                 # Interpolate variables into buildout cfg files only
                 if target_name.lower().endswith('.cfg'):
@@ -409,8 +408,9 @@ def create_buildout(directory, plone_version, version_config, options):
                         'plone_kgs_url': config['plone_kgs_url'] % {'plone_version': plone_version},
                     }
 
-                f2.write(data)
-        f.close()
+                f.write(data)
+            finally:
+                f.close()
 
     # Delete the zip file
     os.unlink(skeleton_file)

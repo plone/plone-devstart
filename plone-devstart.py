@@ -331,13 +331,21 @@ def main():
 
     print
     print "* Creating virtual Python environment"
-    create_virtualenv(directory)
-    print "Done"
+    if not create_virtualenv(directory):
+        print
+        print "** ERROR: Could not create virtual Python environment. Please see above for details"
+        ask("Press Enter to continue, or Ctrl+C to abort")
+    else:
+        print "Done"
 
     print
     print "* Installing PIL"
-    install_pil(directory)
-    print "Done"
+    if not install_pil(directory):
+        print
+        print "** ERROR: Could not install PIL. Please see above for details"
+        ask("Press Enter to continue, or Ctrl+C to abort")
+    else:
+        print "Done"
 
     print
     print "* Obtaining skeleton buildout"
@@ -347,13 +355,21 @@ def main():
         print "plone-devstart will not overwrite it or recreate any other files. Use the"
         print "--force command line option if you want to overwrite files."
     else:
-        create_buildout(directory, version, version_config, options)
-        print "Done"
+        if not create_buildout(directory, version, version_config, options):
+            print
+            print "** ERROR: Could not create buildout. Please see above for details."
+            return
+        else:
+            print "Done"
 
     print
     print "* Bootstrapping buildout"
-    bootstrap(directory)
-    print "Done"
+    if not bootstrap(directory):
+        print
+        print "** ERROR: Bootstrap failed. Please see above for details."
+        return
+    else:
+        print "Done"
 
     print
     print "All done!"
@@ -372,12 +388,12 @@ def create_virtualenv(directory):
     """Create a virtualenv in the given directory
     """
     download(config['virtualenv_url'], directory, 'virtualenv.py')
-    run(sys.executable, os.path.join(directory, 'virtualenv.py'), directory)
+    return run(sys.executable, os.path.join(directory, 'virtualenv.py'), directory)
 
 def install_pil(directory):
     """Install PIL in the virtualenv
     """
-    run(os.path.join(directory, 'bin', 'pip'), 'install', 'PIL')
+    return run(os.path.join(directory, 'bin', 'pip'), 'install', 'PIL')
 
 def create_buildout(directory, plone_version, version_config, options):
     """Create a new buildout in the given directory
@@ -415,6 +431,8 @@ def create_buildout(directory, plone_version, version_config, options):
     # Delete the zip file
     os.unlink(skeleton_file)
 
+    return True
+
 
 def bootstrap(directory):
     """Bootstrap the buildout in the given directory
@@ -423,8 +441,9 @@ def bootstrap(directory):
     download(config['bootstrap_url'], directory, 'bootstrap.py')
 
     os.chdir(directory)
-    run(os.path.join(directory, 'bin', 'python'), 'bootstrap.py')
+    success = run(os.path.join(directory, 'bin', 'python'), 'bootstrap.py')
     os.chdir(cwd)
+    return success
 
 if __name__ == '__main__':
     main()

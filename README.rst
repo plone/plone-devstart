@@ -40,7 +40,7 @@ When ``plone-devstart`` is run, it will:
 * Create the target directory, if it does not exist.
 * Download ``virtualenv.py`` and create an isolated virtual Python environment
   in this directory. This has the effect of creating a Python interpreter that
-  is unaware of any glolbally installed "site packages" that may interfere
+  is unaware of any globally installed "site packages" that may interfere
   with Plone's own versions of certain packages.
 * Download a skeleton Buildout for this version of Plone (see below). If the
   file ``buildout.cfg`` exists, this step will be skipped, unless the

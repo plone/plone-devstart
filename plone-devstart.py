@@ -290,7 +290,7 @@ def main():
         if not check_pil_libraries():
             print
             print "** WARNING: Unable to find ``libjpeg`` and ``zlib`` header files. Building"
-            print "PIL mail fail. You may need to install an operating system package like"
+            print "PIL may fail. You may need to install an operating system package like"
             print "``jpeglib-dev`` or ``jpeglib-devel``."
             print
             ask("Press Enter to continue, or Ctrl+C to abort")

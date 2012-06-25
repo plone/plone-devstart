@@ -1,0 +1,17 @@
+plone-devstart change log
+=========================
+
+0.3
+---
+
+* Support for Plone 4.2
+
+0.2
+---
+
+* Fixes for running under Python 2.5
+
+0.1
+---
+
+* Initial release

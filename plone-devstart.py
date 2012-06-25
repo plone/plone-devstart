@@ -40,6 +40,10 @@ plone_versions = {
         'python_version': '2.6',
         'skeleton_url': 'https://github.com/plone/plone-devstart/raw/master/closet/plone-4.1.zip',
     },
+    '4.2' : {
+        'python_version': '2.6',
+        'skeleton_url': 'https://github.com/plone/plone-devstart/raw/master/closet/plone-4.2.zip',
+    },
 }
 default_version = '4.1'
 

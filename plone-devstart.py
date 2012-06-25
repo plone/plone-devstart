@@ -32,7 +32,7 @@ import distutils.ccompiler
 import distutils.sysconfig
 
 # Version of this script
-devstart_version = "0.2"
+devstart_version = "0.3"
 
 # Base Python version and skeleton location for each base Plone version (to minor version)
 plone_versions = {

@@ -115,5 +115,5 @@ otherwise it allows you to use a system-installed or custom compiled Python.
 * Why not use ``ZopeSkel`` or ``Paste Script`` to build this?
 
 The advantage of ``plone-devstart`` is that it is a single script with no
-dependencies. There is no need to hava a functioning ``easy_install`` or ``pip``
+dependencies. There is no need to have a functioning ``easy_install`` or ``pip``
 to be able to use it.

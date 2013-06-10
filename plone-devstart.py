@@ -44,8 +44,12 @@ plone_versions = {
         'python_version': '2.6',
         'skeleton_url': 'https://github.com/plone/plone-devstart/raw/master/closet/plone-4.2.zip',
     },
+    '4.3' : {
+        'python_version': '2.7',
+        'skeleton_url': 'https://github.com/plone/plone-devstart/raw/master/closet/plone-4.3.zip',
+    },
 }
-default_version = '4.1'
+default_version = '4.3'
 
 config = {
     'virtualenv_url': "https://raw.github.com/pypa/virtualenv/master/virtualenv.py",

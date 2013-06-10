@@ -53,7 +53,7 @@ default_version = '4.3'
 
 config = {
     'virtualenv_url': "https://raw.github.com/pypa/virtualenv/master/virtualenv.py",
-    'bootstrap_url' : "http://python-distribute.org/bootstrap.py",
+    'bootstrap_url' : "http://downloads.buildout.org/2/bootstrap.py",
     'plone_kgs_url' : "http://dist.plone.org/release/%(plone_version)s/versions.cfg",
     'pilcheck':
 """

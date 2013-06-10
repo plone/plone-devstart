@@ -415,7 +415,9 @@ def create_buildout(directory, plone_version, version_config, options):
     zf = zipfile.ZipFile(skeleton_file)
 
     for name in zf.namelist():
-        target_name = os.path.join(directory, name)
+        target_name = os.path.join(directory, name[name.index('/') + 1:])
+        if not target_name:
+            continue
         target_directory = os.path.dirname(target_name)
 
         if not os.path.exists(target_directory):

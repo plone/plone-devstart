@@ -401,7 +401,7 @@ def create_virtualenv(directory):
 def install_pil(directory):
     """Install PIL in the virtualenv
     """
-    return run(os.path.join(directory, 'bin', 'pip'), 'install', 'PIL')
+    return run(os.path.join(directory, 'bin', 'pip'), 'install', 'Pillow')
 
 def create_buildout(directory, plone_version, version_config, options):
     """Create a new buildout in the given directory
